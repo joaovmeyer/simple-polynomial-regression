@@ -2,9 +2,10 @@
 #define SIMPLE_POLYNOMIAL_REGRESSION
 
 #include <vector>
+#include <chrono>
 
 #include "../graph.h"
-#include "../orthogonal-polynomials/generatePolynomials.h"
+#include "../orthogonal polynomials/generatePolynomials.h"
 
 using namespace std;
 
@@ -32,22 +33,23 @@ Vec leastSquares(const Vec& X, const Vec& Y, const Mat& polynomials) {
 
 
 struct PolynomialRegression {
-	Mat polynomials;
-	Vec multipliers;
+	Vec polynomial;
 
 	void fit(const Vec& X, const Vec& Y, int degree = 1) {
-		polynomials = getOrthogonalPolynomials(degree + 1, X);
-		multipliers = leastSquares(X, Y, polynomials);
+		Mat polynomials = getOrthogonalPolynomials(degree + 1, X);
+		Vec multipliers = leastSquares(X, Y, polynomials);
+
+		// combine all polynomials with it's weights into one (makes it easier to evaluate them)
+		polynomial.resize(degree + 1, 0);
+		for (size_t i = 0; i < polynomials.size(); ++i) {
+			for (size_t j = 0; j < polynomials[i].size(); ++j) {
+				polynomial[j] += polynomials[i][j] * multipliers[i];
+			}
+		}
 	}
 
 	double predict(double x) {
-		double y = 0;
-
-		for (size_t i = 0; i < polynomials.size(); ++i) {
-			y += evaluatePolynomial(polynomials[i], x) * multipliers[i];
-		}
-
-		return y;
+		return evaluatePolynomial(polynomial, x);
 	}
 
 };
